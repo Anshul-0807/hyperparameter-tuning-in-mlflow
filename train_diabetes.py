@@ -7,6 +7,12 @@ import pandas as pd
 import mlflow
 
 
+mlflow.set_tracking_uri("https://dagshub.com/Anshul-0807/hyperparameter-tuning-in-mlflow.mlflow")
+
+
+import dagshub
+dagshub.init(repo_owner='Anshul-0807', repo_name='hyperparameter-tuning-in-mlflow', mlflow=True)
+
 # Load the dataset
 df = pd.read_csv("https://raw.githubusercontent.com/npradaschnor/Pima-Indians-Diabetes-Dataset/refs/heads/master/diabetes.csv")
 # Splitting data into features and target
@@ -38,6 +44,38 @@ with mlflow.start_run():
     # Displaying the best parameters and the best score
     best_params = grid_search.best_params_
     best_score = grid_search.best_score_
+
+    # params 
+    
+    mlflow.log_params(best_params)
+
+    # metrics
+    mlflow.log_metric('accuracy', best_score)
+
+    # data
+    train_df = X_train
+    train_df['Outcome'] = y_train
+
+    mlflow.data.from_pandas(train_df)
+    mlflow.log_input(train_df, "training")
+
+    test_df = X_test
+    test_df['Outcome'] = y_test
+
+    mlflow.data.from_pandas(test_df)
+    mlflow.log_input(test_df, "validation")
+
+    # source code
+
+    mlflow.log_artifact(__file__)
+
+    # model
+
+    mlflow.sklearn.log_model(grid_search.best_estimator_, "random forest")
+
+    # tags
+
+    mlflow.set_tag("author", "anshul")
 
     print(best_params)
     print(best_score)

@@ -38,8 +38,15 @@ grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5, n_jobs=-1,
 
 mlflow.set_experiment('diabetes-hp')
 
-with mlflow.start_run():
+with mlflow.start_run(run_name="grid-search") as parent:
     grid_search.fit(X_train, y_train)
+
+    # log all the children
+    for i in range(len(grid_search.cv_results_['params'])):
+        print(i)
+        with mlflow.start_run(nested=True) as child:
+            mlflow.log_params(grid_search.cv_results_['params'][i])
+            mlflow.log_metric("accuracy", grid_search.cv_results_['mean_test_score'][i])
 
     # Displaying the best parameters and the best score
     best_params = grid_search.best_params_
@@ -53,17 +60,30 @@ with mlflow.start_run():
     mlflow.log_metric('accuracy', best_score)
 
     # data
-    train_df = X_train
+    # train_df = X_train
+    # train_df['Outcome'] = y_train
+
+    # mlflow.data.from_pandas(train_df)
+    # mlflow.log_input(train_df, "training")
+
+    # test_df = X_test
+    # test_df['Outcome'] = y_test
+
+    # mlflow.data.from_pandas(test_df)
+    # mlflow.log_input(test_df, "validation")
+
+
+    # Save training data
+    train_df = X_train.copy()
     train_df['Outcome'] = y_train
+    train_df.to_csv("train_data.csv", index=False)
+    mlflow.log_artifact("train_data.csv", artifact_path="data/training")
 
-    mlflow.data.from_pandas(train_df)
-    mlflow.log_input(train_df, "training")
-
-    test_df = X_test
+    # Save testing data
+    test_df = X_test.copy()
     test_df['Outcome'] = y_test
-
-    mlflow.data.from_pandas(test_df)
-    mlflow.log_input(test_df, "validation")
+    test_df.to_csv("test_data.csv", index=False)
+    mlflow.log_artifact("test_data.csv", artifact_path="data/testing")
 
     # source code
 
